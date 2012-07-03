@@ -130,5 +130,10 @@
     <servlet-name>statement</servlet-name>
     <url-pattern>/statement/*</url-pattern>
   </servlet-mapping>
+  
+  <!-- Temp file cleanup listener (Needed by RequestDataSource) -->
+  <listener>
+    <listener-class>org.apache.commons.fileupload.servlet.FileCleanerCleanup</listener-class>
+  </listener>
 
 </web-app>

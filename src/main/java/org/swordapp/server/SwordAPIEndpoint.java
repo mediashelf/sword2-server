@@ -225,11 +225,8 @@ public class SwordAPIEndpoint {
             SwordError {
 
         try {
-            // FIXME StringDataSource is just a hack that won't work for large files
             MimeMultipart mp =
-                    new MimeMultipart(new StringDataSource(
-                            req.getInputStream(), req.getContentType(), req
-                                    .getServletPath()));
+                    new MimeMultipart(new RequestDataSource(req));
 
             BodyPart bp;
             for (int i = 0; i < mp.getCount(); i++) {
