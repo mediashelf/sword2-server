@@ -188,78 +188,77 @@ public class SwordAPIEndpoint {
         deposit.setFile(file);
 
         long fLength = file.length(); // in bytes
-		if ((config.getMaxUploadSize() != -1) && (fLength > config.getMaxUploadSize()))
-		{
-			String msg = "The uploaded file exceeded the maximum file size this server will accept (the file is " +
-							fLength + " bytes but the server will only accept files as large as " +
+        if (config.getMaxUploadSize() != -1 &&
+                fLength > config.getMaxUploadSize()) {
+            String msg =
+                    "The uploaded file exceeded the maximum file size this server will accept (the file is " +
+                            fLength +
+                            " bytes but the server will only accept files as large as " +
                             config.getMaxUploadSize() + " bytes)";
-			throw new SwordError(UriRegistry.ERROR_MAX_UPLOAD_SIZE_EXCEEDED, msg);
+            throw new SwordError(UriRegistry.ERROR_MAX_UPLOAD_SIZE_EXCEEDED,
+                    msg);
         }
 
-		try
-		{
+        try {
             // get the things we might want to compare
             String receivedMD5 = ChecksumUtils.generateMD5(filename);
             log.debug("Received filechecksum: " + receivedMD5);
             String md5 = deposit.getMd5();
             log.debug("Received file checksum header: " + md5);
 
-			if ((md5 != null) && (!md5.equals(receivedMD5)))
-			{
+            if (md5 != null && !md5.equals(receivedMD5)) {
                 log.debug("Bad MD5 for file. Aborting with appropriate error message");
-				String msg = "The received MD5 checksum for the deposited file did not match the checksum sent by the deposit client";
+                String msg =
+                        "The received MD5 checksum for the deposited file did not match the checksum sent by the deposit client";
                 throw new SwordError(UriRegistry.ERROR_CHECKSUM_MISMATCH, msg);
             }
             log.debug("Package temporarily stored as: " + filename);
-		}
-		catch (NoSuchAlgorithmException e)
-		{
+        } catch (NoSuchAlgorithmException e) {
             throw new SwordServerException(e);
-		}
-		catch (IOException e)
-		{
+        } catch (IOException e) {
             throw new SwordServerException(e);
         }
     }
 
-	protected void addDepositPropertiesFromMultipart(Deposit deposit, HttpServletRequest req)
-			throws ServletException, IOException, SwordError
-	{
-		// Parse the request for files (using the fileupload commons library)
-		List<DiskFileItem> items = this.getPartsFromRequest(req);
-		for (DiskFileItem item : items)
-		{
-			// find out which part we are looking at
-			String contentDisposition = item.getHeaders().getHeader("Content-Disposition");
-			String name = this.getName(contentDisposition);
+    protected void addDepositPropertiesFromMultipart(Deposit deposit,
+            HttpServletRequest req) throws ServletException, IOException,
+            SwordError {
 
-			if ("atom".equals(name))
-			{
-				InputStream entryPart = item.getInputStream();
+        try {
+            // FIXME StringDataSource is just a hack that won't work for large files
+            MimeMultipart mp =
+                    new MimeMultipart(new StringDataSource(
+                            req.getInputStream(), req.getContentType(), req
+                                    .getServletPath()));
+
+            BodyPart bp;
+            for (int i = 0; i < mp.getCount(); i++) {
+                bp = mp.getBodyPart(i);
+                String disposition = getHeader(bp, "Content-Disposition");
+                String name = getName(disposition);
+
+                if ("atom".equals(name)) {
+                    InputStream entryPart = bp.getInputStream();
                     Abdera abdera = new Abdera();
                     Parser parser = abdera.getParser();
                     Document<Entry> entryDoc = parser.parse(entryPart);
                     Entry entry = entryDoc.getRoot();
                     deposit.setEntry(entry);
-			}
-			else if ("payload".equals(name))
-			{
-				String md5 = item.getHeaders().getHeader("Content-MD5");
-				String packaging = item.getHeaders().getHeader("Packaging");
-				String filename = this.getFilename(contentDisposition);
-				if (filename == null || "".equals(filename))
-				{
-					throw new SwordError(UriRegistry.ERROR_BAD_REQUEST, "Filename could not be extracted from Content-Disposition");
-				}
-				String ct = item.getContentType();
+                } else if ("payload".equals(name)) {
+                    String md5 = getHeader(bp, "Content-MD5");
+                    String packaging = getHeader(bp, "Packaging");
+                    String filename = getFilename(disposition);
+                    if (filename == null || "".equals(filename)) {
+                        throw new SwordError(UriRegistry.ERROR_BAD_REQUEST,
+                                "Filename could not be extracted from Content-Disposition");
+                    }
+                    String ct = bp.getContentType();
                     String mimeType = "application/octet-stream";
-				if (ct != null)
-				{
+                    if (ct != null) {
                         String[] bits = ct.split(";");
                         mimeType = bits[0].trim();
                     }
-				InputStream mediaPart = item.getInputStream();
-
+                    InputStream mediaPart = bp.getInputStream();
                     deposit.setFilename(filename);
                     deposit.setInputStream(mediaPart);
                     deposit.setMimeType(mimeType);
@@ -267,13 +266,13 @@ public class SwordAPIEndpoint {
                     deposit.setPackaging(packaging);
                 }
             }
-
-		try
-		{
-			this.storeAndCheckBinary(deposit, this.config);
+        } catch (MessagingException e) {
+            throw new SwordError(e.getMessage(), e);
         }
-		catch (SwordServerException e)
-		{
+
+        try {
+            storeAndCheckBinary(deposit, config);
+        } catch (SwordServerException e) {
             throw new ServletException(e);
         }
     }
@@ -397,66 +396,25 @@ public class SwordAPIEndpoint {
         }
     }
 
-	protected String getFilename(String contentDisposition)
-	{
-		if (contentDisposition == null)
-		{
+    protected String getFilename(String contentDisposition) {
+        if (contentDisposition == null) {
             return null;
         }
-
-		// content dispositon should be of the form
-		//
-		// Content-Disposition: attachment; filename="[filename]"
-		// but may have other features too, so we need to pick it apart
-		String token = "; filename=";
-		int fnArg = contentDisposition.indexOf(token);
-		String fromFilename = contentDisposition.substring(fnArg + token.length());
-		int nextSemiColon = fromFilename.indexOf(";");
-		if (nextSemiColon < 0)
-		{
-			// we already have the filename
-			return fromFilename;
-		}
-		String filename = fromFilename.substring(0, nextSemiColon);
-		if (filename.startsWith("\""))
-		{
-			filename = filename.substring(1);
-		}
-		if (filename.endsWith("\""))
-		{
-			filename = filename.substring(0, filename.length());
-		}
-
-		return filename;
+        Matcher m = dispositionFilename.matcher(contentDisposition);
+        if (m.matches()) {
+            return m.group(1);
         }
 
-	protected String getName(String contentDisposition)
-	{
-		// FIXME: this is the same code as above, but with a different token; generalise
-		if (contentDisposition == null)
-		{
         return null;
     }
 
-		// content dispositon should be of the form
-		//
-		// Content-Disposition: attachment; filename="[filename]"
-		// but may have other features too, so we need to pick it apart
-		String token = "; name=";
-		int nameArg = contentDisposition.indexOf(token);
-		String fromName = contentDisposition.substring(nameArg + token.length());
-		int nextSemiColon = fromName.indexOf(";");
-		String name = fromName.substring(0, nextSemiColon);
-		if (name.startsWith("\""))
-		{
-			name = name.substring(1);
-		}
-		if (name.endsWith("\""))
-		{
-			name = name.substring(0, name.length());
+    protected String getName(String contentDisposition) {
+        if (contentDisposition == null) {
+            return null;
         }
-
-		return name;
+        Matcher m = dispositionName.matcher(contentDisposition);
+        if (m.matches()) {
+            return m.group(1);
         }
 
         return null;
@@ -526,5 +484,19 @@ public class SwordAPIEndpoint {
             metadataRelevant = "true".equals(mdr.trim());
         }
         return metadataRelevant;
+    }
+
+    private String getHeader(BodyPart bp, String name) throws SwordError {
+        String[] headers;
+        try {
+            headers = bp.getHeader(name);
+        } catch (MessagingException e) {
+            throw new SwordError(e.getMessage(), e);
+        }
+        if (headers == null) {
+            return null;
+        } else {
+            return headers[0];
+        }
     }
 }
