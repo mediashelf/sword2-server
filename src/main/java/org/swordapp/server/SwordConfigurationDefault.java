@@ -1,64 +1,65 @@
+
 package org.swordapp.server;
 
-public class SwordConfigurationDefault implements SwordConfiguration
-{
-    public boolean returnDepositReceipt()
-    {
+public class SwordConfigurationDefault implements SwordConfiguration {
+
+    @Override
+    public boolean returnDepositReceipt() {
         return true;
     }
 
-    public boolean returnStackTraceInError()
-    {
+    @Override
+    public boolean returnStackTraceInError() {
         return true;
     }
 
-    public boolean returnErrorBody()
-    {
+    @Override
+    public boolean returnErrorBody() {
         return true;
     }
 
-    public String generator()
-    {
+    @Override
+    public String generator() {
         return "http://www.swordapp.org/";
     }
 
-    public String generatorVersion()
-    {
+    @Override
+    public String generatorVersion() {
         return "2.0";
     }
 
-    public String administratorEmail()
-    {
+    @Override
+    public String administratorEmail() {
         return null;
     }
 
-	public String getAuthType()
-	{
-		return "None";
-	}
+    @Override
+    public String getAuthType() {
+        return "Basic";
+    }
 
-	public boolean storeAndCheckBinary()
-	{
-		return false;
-	}
+    @Override
+    public boolean storeAndCheckBinary() {
+        return false;
+    }
 
-	public String getTempDirectory()
-	{
-		return null;
-	}
-
-	public int getMaxUploadSize()
-	{
-		return -1;
-	}
-
-    public String getAlternateUrl()
-    {
+    @Override
+    public String getTempDirectory() {
         return null;
     }
 
-    public String getAlternateUrlContentType()
-    {
+    @Override
+    public int getMaxUploadSize() {
+        return -1;
+    }
+
+    @Override
+    public String getAlternateUrl() {
+        return null;
+    }
+
+    @Override
+    public String getAlternateUrlContentType() {
         return null;
     }
 }

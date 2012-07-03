@@ -1,14 +1,15 @@
-SWORD 2.0 Server
+sword2-server
 ================
+sword2-server is a fork of swordapp/JavaServer2.0.
 
-This server library is an implementation of the SWORD 2.0 standard defined here
+The main difference is it is packaged as a jar, rather than 
+a war.
 
-http://swordapp.org/sword-v2/sword-v2-specifications/
 
 Build
 -----
 
-To build this library use maven 2:
+To build this library use Maven 3:
 
     mvn clean package
 
