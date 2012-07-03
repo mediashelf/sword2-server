@@ -13,10 +13,31 @@ To build this library use Maven 3:
 
     mvn clean package
 
-In the root directory will build the software
-
 Usage
 -----
+
+To include sword2-server in your Maven project, add the following dependency:
+
+````
+<dependency>
+  <groupId>com.yourmediashelf.fedora</groupId>
+  <artifactId>sword2-server</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+<dependency>
+````
+
+Until sword2-server has its first release (i.e., not SNAPSHOT), ensure you have the following repository defined:
+
+````
+<repository>
+  <id>sonatype-nexus-snapshots</id>
+  <name>Sonatype Nexus Snapshots</name>
+  <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+  <snapshots>
+    <enabled>true</enabled>
+  </snapshots>
+</repository>
+````
 
 This library provides a layer between the implementer's software and the web API provided by SWORDv2.  There are two distinct tasks for the implementer when using this library:
 
@@ -32,7 +53,7 @@ The library converts web API requests into objects, and passes them to implement
     StatementManager
 
 * CollectionDepositManager - this contains the method signatures required to create a new item on the server
-* CollectionListMnager - this contains the method signatures required to list the contents of a collection
+* CollectionListManager - this contains the method signatures required to list the contents of a collection
 * ContainerManager - this contains the method signatures for retrieving and updating an existing object on the server
 * MediaResourceManager - this contains the method signatures for retrieving and updating the content within a Container on the server
 * ServiceDocumentManager - this contains the method signatures for retrieving service documents from the server
